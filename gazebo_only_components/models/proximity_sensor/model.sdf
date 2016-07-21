@@ -2,7 +2,7 @@
 <sdf version="1.6">
   <model name="proximity_sick_mm12">
     <link name="link">
-      <sensor name="laser" type="ray">
+      <sensor name="laser" type="parallel_ray">
         <plugin name="proximity_ray_plugin" filename="libProximityRayPlugin.so" >
           <output_state_topic>sensor_output</output_state_topic>
           <time_delay>0.02</time_delay><!-- this modifies the update rate of the ray sensor -->

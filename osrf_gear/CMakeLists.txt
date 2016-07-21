@@ -177,6 +177,32 @@ install(TARGETS ${population_plugin_name}
   RUNTIME DESTINATION bin
 )
 
+
+# Create the ParallelMultiRayShape
+set(parallel_multi_ray_shape_name ParallelMultiRayShape)
+add_library(${parallel_multi_ray_shape_name} src/ParallelMultiRayShape.cc)
+target_link_libraries(${parallel_multi_ray_shape_name}
+  ${GAZEBO_LIBRARIES}
+)
+install(TARGETS ${parallel_multi_ray_shape_name}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+# Create the ParallelMultiRayShape.so shape.
+set(parallel_ray_sensor_name ParallelRaySensor)
+add_library(${parallel_ray_sensor_name} src/ParallelRaySensor.cc)
+target_link_libraries(${parallel_ray_sensor_name}
+  ${parallel_multi_ray_shape_name}
+  ${GAZEBO_LIBRARIES}
+)
+install(TARGETS ${parallel_ray_sensor_name}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
 #############
 ## Install ##
 #############

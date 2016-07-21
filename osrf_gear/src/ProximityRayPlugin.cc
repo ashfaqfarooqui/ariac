@@ -51,10 +51,15 @@ std::string ProximityRayPlugin::Topic(std::string topicName) const
 
   return globalTopicName;
 }
+#include "gazebo/sensors/SensorFactory.hh"
 
 /////////////////////////////////////////////////
 void ProximityRayPlugin::Load(sensors::SensorPtr _parent, sdf::ElementPtr _sdf)
 {
+  std::vector<std::string> types;
+  sensors::SensorFactory::GetSensorTypes(types);
+  for (auto type : types)
+  gzdbg << type << "\n";
     // Get the name of the parent sensor
     this->parentSensor =
         std::dynamic_pointer_cast<sensors::RaySensor>(_parent);
