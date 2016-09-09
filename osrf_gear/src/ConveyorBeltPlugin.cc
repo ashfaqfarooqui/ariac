@@ -97,23 +97,27 @@ void ConveyorBeltPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 /////////////////////////////////////////////////
 void ConveyorBeltPlugin::OnUpdate(const common::UpdateInfo &/*_info*/)
 {
+  //return;
   double velocity;
   {
     std::lock_guard<std::mutex> lock(this->mutex);
     velocity = this->beltVelocity;
   }
   this->ActOnContactingLinks(velocity);
+  //this->UpdatePartialContactingLinks();
 
   // If we're using a custom update rate value we have to check if it's time to
   // update the plugin or not.
   if (!this->TimeToExecute())
     return;
 
-  auto prevNumberContactingLinks = this->contactingLinks.size();
+  //this->PrepareNextCycle();
+  //auto prevNumberContactingLinks = this->contactingLinks.size();
   this->CalculateContactingLinks();
-  if (prevNumberContactingLinks != this->contactingLinks.size()) {
-    gzdbg << "Number of links ontop of belt: " << this->contactingLinks.size() << "\n";
-  }
+  //this->CalculateContactingLinksMultithread();
+  //if (prevNumberContactingLinks != this->contactingLinks.size()) {
+  //  gzdbg << "Number of links ontop of belt: " << this->contactingLinks.size() << "\n";
+  //}
 }
 
 /////////////////////////////////////////////////
@@ -122,7 +126,7 @@ void ConveyorBeltPlugin::ActOnContactingLinks(double velocity)
   ignition::math::Vector3d velocity_beltFrame = velocity * this->velocityAxis;
   auto beltPose = this->parentLink->GetWorldPose().Ign();
   math::Vector3 velocity_worldFrame = beltPose.Rot().RotateVector(velocity_beltFrame);
-  for (auto linkPtr : this->contactingLinks)
+  for (const auto &linkPtr : this->contactingLinks)
   {
     if (linkPtr)
     {

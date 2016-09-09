@@ -300,6 +300,42 @@ void PopulationPlugin::OnUpdate()
   if (!this->dataPtr->enabled)
     return;
 
+  //if (this->first)
+  //{
+  //  // caguero testing
+  //  // Teleport objects.
+  //  for (auto i = 0; i < 15; ++i)
+  //  {
+  //    std::string name = "populate_conveyor|part3_clone_" + std::to_string(i);
+  //    auto modelPtr = this->dataPtr->world->GetModel(name);
+  //    if (modelPtr)
+  //    {
+  //      std::cout << "Teleporting" << std::endl;
+  //      // Move it to the target pose.
+  //      modelPtr->SetWorldPose(math::Pose(-5.1, 4 - 0.25 * i, 1.2, 0, 0, 1.56));
+  //    }
+  //  }
+  //  // end caguero testing
+  //  this->first = false;
+  //}
+//
+  //if (this->dataPtr->world->GetSimTime().Double() > 12.0)
+  //{
+  //  for (auto i = 0; i < 15; ++i)
+  //  {
+  //    std::string name = "populate_conveyor|part3_clone_" + std::to_string(i);
+  //    auto modelPtr = this->dataPtr->world->GetModel(name);
+  //    if (modelPtr)
+  //    {
+  //      // Move it to the target pose.
+  //      for (const auto &link : modelPtr->GetLinks())
+  //        link->SetForce(math::Vector3(0, -5.2, 0));
+  //    }
+  //  }
+  //}
+//
+  //return;
+
   if (this->dataPtr->objects.empty())
   {
     if (this->dataPtr->loopForever)

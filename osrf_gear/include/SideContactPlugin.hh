@@ -81,8 +81,11 @@ namespace gazebo
     /// \brief Subscriber for the contact topic
     protected: transport::SubscriberPtr contactSub;
 
-    /// \brief Contacts msg received
+    /// \brief Contacts msg processed in the current plugin update.
     protected: msgs::Contacts newestContactsMsg;
+
+    /// \brief Contact msg to be used in the next plugin update.
+    protected: msgs::Contacts nextContactsMsg;
 
     /// \brief Mutex for protecting contacts msg
     protected: mutable boost::mutex mutex;
@@ -96,7 +99,8 @@ namespace gazebo
     /// \brief Pointer to the sensor's parent's link
     protected: physics::LinkPtr parentLink;
 
-    /// \brief Set of pointers to links that have collisions with the parent link's side
+    /// \brief Set of pointers to links that have collisions with the
+    /// parent link's side. These links are used in the current plugin update.
     protected: std::set<physics::LinkPtr> contactingLinks;
 
     /// \brief Set of pointers to models that have collisions with the parent link's side
@@ -109,8 +113,17 @@ namespace gazebo
     /// \brief Determine which links are in contact with the side of the parent link
     protected: virtual void CalculateContactingLinks();
 
+    protected: virtual void CalculateContactingLinksMultithread();
+
     /// \brief Determine which models are in contact with the side of the parent link
     protected: virtual void CalculateContactingModels();
+
+    protected: virtual void PrepareNextCycle();
+
+    protected: virtual std::set<physics::LinkPtr>
+      CalculatePartialContactingLinks(const int _from, const int len) const;
+
+    protected: virtual void UpdatePartialContactingLinks();
 
     /// \brief Determine whether is time to give the plugin an update based on
     /// the plugin's update rate.
@@ -123,6 +136,13 @@ namespace gazebo
     /// \brief Last time (sim time) that the plugin was updated.
     protected: gazebo::common::Time lastUpdateTime;
 
+    protected: std::set<physics::LinkPtr> partialContactingLinks;
+
+    protected: bool partialUpdateReady = false;
+
+    protected: unsigned int contactsNextIndex;
+
+    protected: unsigned int contactsPerCycle;
   };
 }
 #endif

@@ -121,6 +121,8 @@ namespace gazebo
 
     /// \brief Private data pointer.
     private: std::unique_ptr<PopulationPluginPrivate> dataPtr;
+
+    private: bool first = true;
   };
 }
 #endif

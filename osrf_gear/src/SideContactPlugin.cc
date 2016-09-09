@@ -15,6 +15,7 @@
  *
 */
 
+#include <future>
 #include <boost/algorithm/string/replace.hpp>
 #include <string>
 
@@ -149,7 +150,7 @@ bool SideContactPlugin::FindContactSensor()
 void SideContactPlugin::OnContactsReceived(ConstContactsPtr& _msg)
 {
   boost::mutex::scoped_lock lock(this->mutex);
-  this->newestContactsMsg = *_msg;
+  this->nextContactsMsg = *_msg;
   this->newMsg = true;
 }
 
@@ -160,13 +161,227 @@ void SideContactPlugin::OnUpdate(const common::UpdateInfo &/*_info*/)
 }
 
 /////////////////////////////////////////////////
+void SideContactPlugin::PrepareNextCycle()
+{
+  this->partialUpdateReady = false;
+
+  {
+    boost::mutex::scoped_lock lock(this->mutex);
+
+    if (!this->newMsg)
+    {
+      return;
+    }
+
+    this->newMsg = false;
+    this->newestContactsMsg = this->nextContactsMsg;
+  }
+
+  // Update contacting links with the result from the last cycle of updates.
+  this->contactingLinks = this->partialContactingLinks;
+
+  this->partialUpdateReady = true;
+  this->partialContactingLinks.clear();
+  this->contactsNextIndex = 0;
+
+  if (this->updateRate > 0)
+  {
+    this->contactsPerCycle = ceil(this->newestContactsMsg.contact_size() /
+      ((1.0 / this->updateRate) /
+       this->world->GetPhysicsEngine()->GetMaxStepSize()));
+  }
+  else
+  {
+    this->contactsPerCycle = ceil(this->newestContactsMsg.contact_size() /
+      ((1.0 / 1000.0) /
+       this->world->GetPhysicsEngine()->GetMaxStepSize()));
+  }
+
+  //std::cout << "Contacts: " << this->newestContactsMsg.contact_size() << std::endl;
+  //std::cout << "Update period: " << this->world->GetPhysicsEngine()->GetUpdatePeriod() << std::endl;
+  //std::cout << "Contacts per cycle:" << this->contactsPerCycle << std::endl;
+}
+
+/////////////////////////////////////////////////
+void SideContactPlugin::UpdatePartialContactingLinks()
+{
+  auto t1 = std::chrono::steady_clock::now();
+
+  if (!this->partialUpdateReady)
+    return;
+
+  unsigned int counter = 0;
+  int index = this->contactsNextIndex + counter;
+  while (counter < this->contactsPerCycle &&
+         index < this->newestContactsMsg.contact_size())
+  {
+    // Get the collision that's not the parent link
+    const auto &contact = this->newestContactsMsg.contact(index);
+    const std::string *collision = &(contact.collision1());
+    if (this->collisionName == *collision) {
+      collision = &(contact.collision2());
+    }
+
+    physics::CollisionPtr collisionPtr =
+      boost::static_pointer_cast<physics::Collision>(this->world->GetEntity(*collision));
+    if (collisionPtr) { // ensure the collision hasn't been deleted
+      this->partialContactingLinks.insert(collisionPtr->GetLink());
+    }
+
+    ++counter;
+    ++index;
+  }
+
+  this->contactsNextIndex += counter;
+
+  auto t2 = std::chrono::steady_clock::now();
+  auto elapsed = t2 - t1;
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>
+           (elapsed).count();
+  if (ms > 1)
+  {
+    std::cout << "Size: " << counter << std::endl;
+    std::cout << "Elapsed: " << ms << std::endl;
+  }
+}
+
+/////////////////////////////////////////////////
+std::set<physics::LinkPtr> SideContactPlugin::CalculatePartialContactingLinks(
+  const int _from, const int _len) const
+{
+  std::set<physics::LinkPtr> res;
+
+  for (int i = _from; i < _from + _len; ++i)
+  {
+    // Get the collision that's not the parent link
+    const auto &contact = this->newestContactsMsg.contact(i);
+    const std::string *collision = &(contact.collision1());
+    if (this->collisionName == *collision) {
+      collision = &(contact.collision2());
+    }
+
+    physics::CollisionPtr collisionPtr =
+      boost::static_pointer_cast<physics::Collision>(this->world->GetEntity(*collision));
+    if (collisionPtr) { // ensure the collision hasn't been deleted
+      res.insert(collisionPtr->GetLink());
+    }
+  }
+
+  return res;
+}
+
+/////////////////////////////////////////////////
+void SideContactPlugin::CalculateContactingLinksMultithread()
+{
+  auto t1 = std::chrono::steady_clock::now();
+  {
+    boost::mutex::scoped_lock lock(this->mutex);
+
+    if (!this->newMsg)
+    {
+      return;
+    }
+
+    this->newMsg = false;
+    this->newestContactsMsg = this->nextContactsMsg;
+  }
+
+  this->contactingLinks.clear();
+
+  // Get all the contacts
+  auto size = this->newestContactsMsg.contact_size();
+  std::set<physics::LinkPtr> part1;
+  std::set<physics::LinkPtr> part2;
+  std::set<physics::LinkPtr> part3;
+  std::set<physics::LinkPtr> part4;
+  std::set<physics::LinkPtr> part5;
+  std::set<physics::LinkPtr> part6;
+  std::set<physics::LinkPtr> part7;
+  std::set<physics::LinkPtr> part8;
+  if (size <= 100)
+  {
+    part1 = this->CalculatePartialContactingLinks(0, size);
+  }
+  else
+  {
+    auto f1 = std::async(std::launch::async,
+                         &SideContactPlugin::CalculatePartialContactingLinks,
+                         this, 0, size / 8);
+    auto f2 = std::async(std::launch::async,
+                         &SideContactPlugin::CalculatePartialContactingLinks,
+                         this, 1 * size / 8, size / 8);
+    auto f3 = std::async(std::launch::async,
+                         &SideContactPlugin::CalculatePartialContactingLinks,
+                         this, 2 * size / 8, size / 8);
+    auto f4 = std::async(std::launch::async,
+                         &SideContactPlugin::CalculatePartialContactingLinks,
+                         this, 3 * size / 8, size / 8);
+    auto f5 = std::async(std::launch::async,
+                           &SideContactPlugin::CalculatePartialContactingLinks,
+                         this, 4 * size / 8, size / 8);
+    auto f6 = std::async(std::launch::async,
+                         &SideContactPlugin::CalculatePartialContactingLinks,
+                         this, 5 * size / 8, size / 8);
+    auto f7 = std::async(std::launch::async,
+                         &SideContactPlugin::CalculatePartialContactingLinks,
+                         this, 6 * size / 8, size / 8);
+
+    std::future<std::set<physics::LinkPtr>> f8;
+    if (size % 2 == 0)
+    {
+      f8 = std::async(std::launch::async,
+                         &SideContactPlugin::CalculatePartialContactingLinks,
+                         this, 7 * size / 8, size / 8);
+    }
+    else
+    {
+      f8 = std::async(std::launch::async,
+                         &SideContactPlugin::CalculatePartialContactingLinks,
+                         this, 7 * size / 8, (size / 8) + 1);
+    }
+
+    part1 = f1.get();
+    part2 = f2.get();
+    part3 = f3.get();
+    part4 = f4.get();
+    part5 = f5.get();
+    part6 = f6.get();
+    part7 = f7.get();
+    part8 = f8.get();
+  }
+
+  // Merge result.
+  part1.insert(part2.begin(), part2.end());
+  part1.insert(part3.begin(), part3.end());
+  part1.insert(part4.begin(), part4.end());
+  part1.insert(part5.begin(), part5.end());
+  part1.insert(part6.begin(), part6.end());
+  part1.insert(part7.begin(), part7.end());
+  part1.insert(part8.begin(), part8.end());
+
+  this->contactingLinks = part1;
+
+  auto t2 = std::chrono::steady_clock::now();
+  auto elapsed = t2 - t1;
+  std::cout << "Size: " << size << std::endl;
+  std::cout << "Elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>
+           (elapsed).count() << std::endl;
+}
+
+/////////////////////////////////////////////////
 void SideContactPlugin::CalculateContactingLinks()
 {
-  boost::mutex::scoped_lock lock(this->mutex);
-
-  if (!this->newMsg)
+  auto t1 = std::chrono::steady_clock::now();
   {
-    return;
+    boost::mutex::scoped_lock lock(this->mutex);
+
+    if (!this->newMsg)
+    {
+      return;
+    }
+
+    this->newMsg = false;
+    this->newestContactsMsg = this->nextContactsMsg;
   }
 
   this->contactingLinks.clear();
@@ -187,7 +402,11 @@ void SideContactPlugin::CalculateContactingLinks()
       this->contactingLinks.insert(collisionPtr->GetLink());
     }
   }
-  this->newMsg = false;
+  auto t2 = std::chrono::steady_clock::now();
+  auto elapsed = t2 - t1;
+  std::cout << "Size: " << this->newestContactsMsg.contact_size() << std::endl;
+  std::cout << "Elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>
+           (elapsed).count() << std::endl;
 }
 
 /////////////////////////////////////////////////
