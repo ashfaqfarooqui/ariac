@@ -35,7 +35,9 @@ target_link_libraries(ariac_example_node ${catkin_LIBRARIES})
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 
 ## Mark executable scripts (Python etc.) for installation
-install(PROGRAMS scripts/ariac_example_node.py
+install(PROGRAMS
+  scripts/ariac_example_node.py
+  scripts/tf2_example.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
