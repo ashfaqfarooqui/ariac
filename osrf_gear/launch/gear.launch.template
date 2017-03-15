@@ -4,7 +4,13 @@
   <node name="relay_joint_states" pkg="topic_tools" type="relay"
         args="/joint_states /ariac/joint_states" required="true" output="log" />
 
-  <remap from="joint_states" to="ariac/joint_states" />
+  <!-- remap topics to conform to ROS-I specifications -->
+  <!--
+<remap from="/arm_controller/follow_joint_trajectory" to="/joint_trajectory_action" />
+<remap from="/arm_controller/state" to="/feedback_states" />
+<remap from="/arm_controller/command" to="/joint_path_command"/>
+-->
+<!--  <remap from="joint_states" to="ariac/joint_states" /> -->
 
   <arg name="limited" default="false"/>
   <arg name="gui" default="true"/>
@@ -45,6 +51,11 @@ initial_joint_states_string = \
     <arg name="extra_spawn_model_args" value="@(initial_joint_states_string)" />
     <arg name="set_robot_description" value="false" />
   </include>
+@[end if]@
+@[if arm.type == 'irb120']@
+  <!-- load irb120 -->
+  <include file="$(find osrf_gear)/launch/irb120/irb120.xml"/>
+
 @[end if]@
 @[end if]@
 

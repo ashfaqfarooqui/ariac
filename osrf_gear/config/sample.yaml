@@ -47,7 +47,7 @@ time_limit: -1
 # Competitor trial configuration options
 
 arm:
-  type: ur10
+  type: irb120
 
 sensors:
   break_beam:

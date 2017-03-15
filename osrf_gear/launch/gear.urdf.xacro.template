@@ -8,8 +8,13 @@
   <xacro:include filename="$(find osrf_gear)/launch/ur10/ur10.urdf.xacro" />
   <xacro:property name="wrist_link" value="wrist_3_link" />
 @[end if]@
+@[if arm.type == 'irb120']@
+  <xacro:include filename="$(find osrf_gear)/launch/irb120/irb120.urdf.xacro" />
+  <xacro:property name="wrist_link" value="link_6" />
+@[end if]@
 
   <!-- vacuum gripper -->
+  <!--
   <xacro:include filename="$(find osrf_gear)/launch/vacuum_gripper/vacuum_gripper.urdf.xacro" />
 
   <xacro:create_vacuum_gripper wrist_link="${wrist_link}" >
@@ -31,6 +36,7 @@
     </drops_info>
   </xacro:create_vacuum_gripper>
 @[end if]@
+-->
 
   <!-- linear arm actuator -->
   <xacro:include filename="$(find osrf_gear)/launch/linear_arm_actuator/linear_arm_actuator.urdf.xacro" />
@@ -43,7 +49,7 @@
   <joint name="world_joint" type="fixed">
     <parent link="world" />
     <child link="linear_arm_actuator" />
-    <origin xyz="0.3 0.0 0.9" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.15 0.0 0.7" rpy="0.0 0.0 0.0" />
   </joint>
 
   <!-- sensor links and fixed joints -->
