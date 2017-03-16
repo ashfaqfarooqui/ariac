@@ -10,7 +10,7 @@
   <transmission name="${prefix}tran1">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="${prefix}joint_1">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="${prefix}motor1">
       <mechanicalReduction>1</mechanicalReduction>
@@ -19,7 +19,7 @@
   <transmission name="${prefix}tran2">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="${prefix}joint_2">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="${prefix}motor2">
       <mechanicalReduction>1</mechanicalReduction>
@@ -28,7 +28,7 @@
   <transmission name="${prefix}tran3">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="${prefix}joint_3">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="${prefix}motor3">
       <mechanicalReduction>1</mechanicalReduction>
@@ -37,7 +37,7 @@
   <transmission name="${prefix}tran4">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="${prefix}joint_4">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="${prefix}motor4">
       <mechanicalReduction>1</mechanicalReduction>
@@ -46,7 +46,7 @@
   <transmission name="${prefix}tran5">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="${prefix}joint_5">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="${prefix}motor5">
       <mechanicalReduction>1</mechanicalReduction>
@@ -55,7 +55,7 @@
   <transmission name="${prefix}tran6">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="${prefix}joint_6">
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="${prefix}motor6">
       <mechanicalReduction>1</mechanicalReduction>
