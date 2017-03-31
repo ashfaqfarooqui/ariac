@@ -19,6 +19,7 @@ catkin_package(
 )
 
 set(rostests
+  agv.test
   ariac_rosapi.test
   ariac_example.test
   ariac_qual2a.test
@@ -54,6 +55,7 @@ install(FILES
 install(PROGRAMS
   ros_api_checker
   test_example_node.py
+  test_agv.py
   test_gripper.py
   test_scoring_after_waiting.py
   test_scoring_after_waiting.py
