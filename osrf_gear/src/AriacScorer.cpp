@@ -126,6 +126,18 @@ void AriacScorer::ScoreCurrentState()
 }
 
 /////////////////////////////////////////////////
+std::vector<ariac::KitTray> AriacScorer::GetTrays()
+{
+  boost::mutex::scoped_lock kitTraysLock(this->kitTraysMutex);
+  std::vector<ariac::KitTray> kitTraysVec;
+  for (auto const & item : this->kitTrays)
+  {
+    kitTraysVec.push_back(item.second);
+  }
+  return kitTraysVec;
+}
+
+/////////////////////////////////////////////////
 bool AriacScorer::GetTrayById(const ariac::TrayID_t & trayID, ariac::KitTray & kitTray)
 {
   auto it = this->kitTrays.find(trayID);

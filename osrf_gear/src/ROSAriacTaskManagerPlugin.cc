@@ -263,14 +263,26 @@ void ROSAriacTaskManagerPlugin::Load(physics::WorldPtr _world,
   while (orderElem)
   {
     // Parse the start time.
-    if (!orderElem->HasElement("start_time"))
+    double startTime = std::numeric_limits<double>::infinity();
+    if (orderElem->HasElement("start_time"))
     {
-      gzerr << "Unable to find <start_time> element in <order>. Ignoring" << std::endl;
-      orderElem = orderElem->GetNextElement("order");
-      continue;
+      sdf::ElementPtr startTimeElement = orderElem->GetElement("start_time");
+      startTime = startTimeElement->Get<double>();
     }
-    sdf::ElementPtr startTimeElement = orderElem->GetElement("start_time");
-    double startTime = startTimeElement->Get<double>();
+
+    // Parse the interruption criteria.
+    int interruptOnUnwantedParts = -1;
+    if (orderElem->HasElement("interrupt_on_unwanted_parts"))
+    {
+      sdf::ElementPtr interruptOnUnwantedPartsElem = orderElem->GetElement("interrupt_on_unwanted_parts");
+      interruptOnUnwantedParts = interruptOnUnwantedPartsElem->Get<int>();
+    }
+    int interruptOnWantedParts = -1;
+    if (orderElem->HasElement("interrupt_on_wanted_parts"))
+    {
+      sdf::ElementPtr interruptOnWantedPartsElem = orderElem->GetElement("interrupt_on_wanted_parts");
+      interruptOnWantedParts = interruptOnWantedPartsElem->Get<int>();
+    }
 
     // Parse the allowed completion time.
     double allowedTime = std::numeric_limits<double>::infinity();
@@ -352,7 +364,7 @@ void ROSAriacTaskManagerPlugin::Load(physics::WorldPtr _world,
 
     // Add a new order.
     ariac::OrderID_t orderID = "order_" + std::to_string(orderCount++);
-    ariac::Order order = {orderID, startTime, allowedTime, kits, 0.0};
+    ariac::Order order = {orderID, startTime, interruptOnUnwantedParts, interruptOnWantedParts, allowedTime, kits, 0.0};
     this->dataPtr->ordersToAnnounce.push_back(order);
 
     orderElem = orderElem->GetNextElement("order");
@@ -590,18 +602,67 @@ void ROSAriacTaskManagerPlugin::ProcessOrdersToAnnounce()
   if (this->dataPtr->ordersToAnnounce.empty())
     return;
 
+  auto nextOrder = this->dataPtr->ordersToAnnounce.front();
+  bool interruptOnUnwantedParts = nextOrder.interruptOnUnwantedParts > 0;
+  bool interruptOnWantedParts = nextOrder.interruptOnWantedParts > 0;
+  int maxNumUnwantedParts = 0;
+  int maxNumWantedParts = 0;
+  if (interruptOnWantedParts || interruptOnUnwantedParts)
+  {
+    // Check if the parts in the trays are enough to interrupt the current order
+
+    // Determine what parts are in the next order
+    std::vector<std::string> partsInNextOrder;
+    for (const auto & kit : nextOrder.kits)
+    {
+      for (const auto & part : kit.objects)
+      {
+        partsInNextOrder.push_back(part.type);
+      }
+    }
+
+    // Check the trays for parts from the pending order
+    std::vector<int> numUnwantedPartsOnTrays;
+    std::vector<int> numWantedPartsOnTrays;
+    for (const auto & tray : this->dataPtr->ariacScorer.GetTrays())
+    {
+      int numUnwantedPartsOnTray = 0;
+      int numWantedPartsOnTray = 0;
+      std::vector<std::string> partsInNextOrder_copy(partsInNextOrder);
+      for (const auto part : tray.currentKit.objects)
+      {
+        auto it = std::find(partsInNextOrder_copy.begin(), partsInNextOrder_copy.end(), part.type);
+        if (it == partsInNextOrder_copy.end())
+        {
+          numUnwantedPartsOnTray += 1;
+        }
+        else
+        {
+          numWantedPartsOnTray += 1;
+          partsInNextOrder_copy.erase(it);
+        }
+      }
+      numUnwantedPartsOnTrays.push_back(numUnwantedPartsOnTray);
+      numWantedPartsOnTrays.push_back(numWantedPartsOnTray);
+    }
+    maxNumUnwantedParts = *std::max_element(numUnwantedPartsOnTrays.begin(), numUnwantedPartsOnTrays.end());
+    maxNumWantedParts = *std::max_element(numWantedPartsOnTrays.begin(), numWantedPartsOnTrays.end());
+  }
+
   // Check whether announce a new order from the list.
   auto elapsed = this->dataPtr->world->GetSimTime() - this->dataPtr->gameStartTime;
-  if (elapsed.Double() >= this->dataPtr->ordersToAnnounce.front().startTime)
+  if ((elapsed.Double() >= nextOrder.startTime) ||
+    (interruptOnUnwantedParts && maxNumUnwantedParts >= nextOrder.interruptOnUnwantedParts) ||
+    (interruptOnWantedParts && maxNumWantedParts >= nextOrder.interruptOnWantedParts)
+    )
   {
-    auto order = this->dataPtr->ordersToAnnounce.front();
-    gzdbg << "New order to announce: " << order.orderID << std::endl;
+    gzdbg << "New order to announce: " << nextOrder.orderID << std::endl;
 
     // Move order to the 'in process' stack
-    this->dataPtr->ordersInProgress.push(ariac::Order(order));
+    this->dataPtr->ordersInProgress.push(ariac::Order(nextOrder));
     this->dataPtr->ordersToAnnounce.erase(this->dataPtr->ordersToAnnounce.begin());
 
-    this->AssignOrder(order);
+    this->AssignOrder(nextOrder);
   }
 }
 
