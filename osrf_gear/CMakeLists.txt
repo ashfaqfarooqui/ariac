@@ -325,7 +325,7 @@ install(TARGETS ${target_name}
 ## Install ##
 #############
 
-install(PROGRAMS script/gear.py script/startup.sh
+install(PROGRAMS script/gear.py script/startup.sh script/run_ariac_task.sh
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
