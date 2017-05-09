@@ -13,7 +13,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NOCOLOR='\033[0m'
 
-# Define usage function
+# Define usage function.
 usage()
 {
   echo "Usage: $0 <task.yaml> <user.yaml> <dst_folder>"
@@ -60,7 +60,7 @@ wait_until_competition_ends
 
 echo -n "Terminating Gazebo..."
 
-# Terminate Gazebo
+# Terminate Gazebo.
 killall -w gzserver
 
 echo -e "${GREEN}OK${NOCOLOR}"
