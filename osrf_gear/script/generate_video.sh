@@ -42,9 +42,27 @@ wait_until_playback_ends()
 GZ_LOG_FILE=$1
 OUTPUT=$2
 
+# Sanity check: Make sure that the log file exists.
+if [ ! -f $GZ_LOG_FILE ]; then
+    echo "Gazebo log file [$GZ_LOG_FILE] not found!"
+    exit 1
+fi
+
+# Sanity check: Make sure that catkin_find is found.
+which catkin_find > /dev/null || { echo "Unable to find catkin_find."\
+  "Did you source your ROS setup.bash file?" ; exit 1; }
+
+# Sanity check: Make sure that roslaunch can find gear_playback.launch
+catkin_find --share osrf_gear/launch/gear_playback.launch | grep gear_playback \
+  > /dev/null || { echo "Unable to find gear_playback.launch . Did you source" \
+  "your ARIAC setup.bash file?" ; exit 1; }
+
+# Sanity check: Kill any dangling Gazebo before moving forward.
+killall -wq gzserver gzclient || true
+
 # Start Gazebo in playback mode (paused).
 roslaunch osrf_gear gear_playback.launch state_log_path:=$GZ_LOG_FILE \
-  > /dev/null 2>&1 &
+  > $OUTPUT.playback_output.txt 2>&1 &
 
 # Wait and find the Gazebo Window ID.
 until wmctrl -lp | grep Gazebo > /dev/null
@@ -71,11 +89,14 @@ echo -e "${GREEN}OK${NOCOLOR}"
 
 # Start recording the Gazebo Window.
 echo -n "Recording..."
-recordmydesktop --windowid=$GAZEBO_WINDOW_ID -o $OUTPUT 2> /dev/null &
+recordmydesktop --windowid=$GAZEBO_WINDOW_ID -o $OUTPUT \
+  > $OUTPUT.record_output.txt 2>&1 &
 echo -e "${GREEN}OK${NOCOLOR}"
 
 # Wait until the playback ends.
 wait_until_playback_ends
 
 # Terminate Gazebo.
+echo -n "Encoding video..."
 killall -w gzserver gzclient recordmydesktop
+echo -e "${GREEN}OK${NOCOLOR}"
