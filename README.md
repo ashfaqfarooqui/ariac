@@ -1,3 +1,5 @@
+Cloned from :https://bitbucket.org/osrf/ariac/src
+
 # Gazebo Environment for Agile Robotics (GEAR)
 
 GEAR is the software used by teams participating in the Agile Robotics for
